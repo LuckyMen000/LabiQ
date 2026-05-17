@@ -4,6 +4,7 @@ import RegisterPage from "./pages/RegisterPage";
 import AdminPage from "./pages/AdminPage";
 import AdminRoute from "./pages/AdminRoute";
 import AdminLogsPage from "./pages/AdminLogsPage";
+import AdminUsersPage from "./pages/AdminUsersPage";
 
 function App() {
   const savedUser = localStorage.getItem("user");
@@ -33,6 +34,15 @@ function App() {
           element={
             <AdminRoute user={user}>
               <AdminLogsPage user={user} onLogout={handleLogout} />
+            </AdminRoute>
+          }
+        />
+
+        <Route
+        path="/admin/users"
+          element={
+            <AdminRoute user={user}>
+              <AdminUsersPage user={user} onLogout={handleLogout} />
             </AdminRoute>
           }
         />

@@ -61,7 +61,10 @@ function AdminSidebar({ user, onLogout }: AdminSidebarProps) {
           <span>Главная</span>
         </NavItem>
 
-        <NavItem onClick={() => navigate("/admin/users")}>
+       <NavItem
+          active={isActive("/admin/users")}
+          onClick={() => navigate("/admin/users")}
+           >
           <Icon icon={FiUsers} />
           <span>Пользователи</span>
         </NavItem>
