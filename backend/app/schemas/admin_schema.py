@@ -21,6 +21,22 @@ class AuthLogResponse(BaseModel):
         from_attributes = True
 
 
+class UnifiedLogResponse(BaseModel):
+    id: int
+    source_id: int
+    log_type: str
+    action: str
+    actor: Optional[str] = None
+    target: Optional[str] = None
+    ip_address: Optional[str] = None
+    location: Optional[str] = None
+    message: Optional[str] = None
+    severity: Optional[str] = None
+    status: Optional[str] = None
+    user_agent: Optional[str] = None
+    created_at: datetime
+
+
 class AdminUserResponse(BaseModel):
     id: int
     full_name: str
@@ -61,3 +77,5 @@ class AdminStatsResponse(BaseModel):
     success_login_count: int
     failed_login_count: int
     forbidden_login_count: int
+    audit_logs_count: int
+    security_incidents_count: int

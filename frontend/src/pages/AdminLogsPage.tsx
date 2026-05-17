@@ -1,16 +1,20 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import styled from "@emotion/styled";
 import { useNavigate } from "react-router-dom";
 import {
   FiActivity,
+  FiAlertTriangle,
   FiCheckCircle,
+  FiFileText,
   FiMapPin,
   FiMonitor,
   FiRefreshCw,
   FiShield,
   FiUser,
+  FiUsers,
   FiXCircle,
 } from "react-icons/fi";
+
 import AdminSidebar from "../components/admin/AdminSidebar";
 import { api } from "../api/api";
 
@@ -23,17 +27,19 @@ type User = {
   is_active: boolean;
 };
 
-type AuthLog = {
+type UnifiedLog = {
   id: number;
-  user_id: number | null;
+  source_id: number;
+  log_type: "AUTH" | "ADMIN_USER" | "SECURITY_INCIDENT" | string;
+  action: string;
+  actor: string | null;
+  target: string | null;
   ip_address: string | null;
-  username_or_email: string | null;
-  country: string | null;
-  region: string | null;
-  city: string | null;
-  user_agent: string | null;
-  status: string;
+  location: string | null;
   message: string | null;
+  severity: string | null;
+  status: string | null;
+  user_agent: string | null;
   created_at: string;
 };
 
@@ -41,6 +47,8 @@ type AdminLogsPageProps = {
   user: User | null;
   onLogout: () => void;
 };
+
+type FilterType = "ALL" | "SECURITY_INCIDENT" | "AUTH" | "ADMIN_USER";
 
 type IconProps = {
   icon: unknown;
@@ -55,7 +63,8 @@ function Icon({ icon, size = 18 }: IconProps) {
 function AdminLogsPage({ user, onLogout }: AdminLogsPageProps) {
   const navigate = useNavigate();
 
-  const [logs, setLogs] = useState<AuthLog[]>([]);
+  const [logs, setLogs] = useState<UnifiedLog[]>([]);
+  const [activeFilter, setActiveFilter] = useState<FilterType>("ALL");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -69,10 +78,10 @@ function AdminLogsPage({ user, onLogout }: AdminLogsPageProps) {
       setLoading(true);
       setError("");
 
-    const response = await api.get<AuthLog[]>("/admin/logs");      
-    setLogs(response.data);
+      const response = await api.get<UnifiedLog[]>("/admin/logs");
+      setLogs(response.data);
     } catch {
-      setError("Не удалось загрузить логи авторизации");
+      setError("Не удалось загрузить логи системы");
     } finally {
       setLoading(false);
     }
@@ -82,19 +91,49 @@ function AdminLogsPage({ user, onLogout }: AdminLogsPageProps) {
     loadLogs();
   }, []);
 
+  const filteredLogs = useMemo(() => {
+    if (activeFilter === "ALL") {
+      return logs;
+    }
+
+    return logs.filter((log) => log.log_type === activeFilter);
+  }, [logs, activeFilter]);
+
   const formatDate = (value: string) => {
     return new Date(value).toLocaleString("ru-RU");
   };
 
-  const getStatusLabel = (status: string) => {
-    if (status === "SUCCESS") return "Успешно";
-    if (status === "FAILED") return "Ошибка";
-    if (status === "FORBIDDEN") return "Запрещено";
-    return status;
+  const getTypeLabel = (type: string) => {
+    if (type === "AUTH") return "Вход/регистрация";
+    if (type === "ADMIN_USER") return "[Admin] Пользователи";
+    if (type === "SECURITY_INCIDENT") return "Инцидент ИБ";
+    return type;
   };
 
-  const getLocation = (log: AuthLog) => {
-    return [log.country, log.region, log.city].filter(Boolean).join(", ") || "-";
+  const getActionLabel = (action: string) => {
+    if (action === "SUCCESS") return "Успешный вход";
+    if (action === "FAILED") return "Ошибка входа";
+    if (action === "FORBIDDEN") return "Запрещено";
+    if (action === "USER_CREATED") return "Создание пользователя";
+    if (action === "USER_UPDATED") return "Редактирование пользователя";
+    if (action === "USER_DELETED") return "Удаление пользователя";
+    if (action === "BRUTE_FORCE") return "Brute Force";
+    return action;
+  };
+
+  const getLogIcon = (log: UnifiedLog) => {
+    if (log.log_type === "SECURITY_INCIDENT") return FiAlertTriangle;
+    if (log.log_type === "ADMIN_USER") return FiUsers;
+    if (log.action === "SUCCESS") return FiCheckCircle;
+    if (
+      log.action === "FAILED" ||
+      log.action === "FORBIDDEN" ||
+      log.action === "BRUTE_FORCE"
+    ) {
+      return FiXCircle;
+    }
+
+    return FiActivity;
   };
 
   return (
@@ -104,9 +143,10 @@ function AdminLogsPage({ user, onLogout }: AdminLogsPageProps) {
       <Content>
         <Header>
           <HeaderLeft>
-            <Title>Логи входа</Title>
+            <Title>Логи системы</Title>
             <Subtitle>
-              История авторизаций, ошибок входа и заблокированных попыток
+              Входы, регистрации, действия администратора и инциденты
+              информационной безопасности
             </Subtitle>
           </HeaderLeft>
 
@@ -118,42 +158,56 @@ function AdminLogsPage({ user, onLogout }: AdminLogsPageProps) {
 
         <StatsGrid>
           <StatCard>
-            <StatIcon success>
-              <Icon icon={FiCheckCircle} />
+            <StatIcon>
+              <Icon icon={FiFileText} />
             </StatIcon>
+
             <div>
-              <span>Успешные входы</span>
-              <strong>{logs.filter((log) => log.status === "SUCCESS").length}</strong>
+              <span>Все логи</span>
+              <strong>{logs.length}</strong>
             </div>
           </StatCard>
 
           <StatCard>
             <StatIcon danger>
-              <Icon icon={FiXCircle} />
+              <Icon icon={FiAlertTriangle} />
             </StatIcon>
+
             <div>
-              <span>Ошибки входа</span>
-              <strong>{logs.filter((log) => log.status === "FAILED").length}</strong>
+              <span>Инциденты ИБ</span>
+              <strong>
+                {
+                  logs.filter(
+                    (log) => log.log_type === "SECURITY_INCIDENT"
+                  ).length
+                }
+              </strong>
             </div>
           </StatCard>
 
           <StatCard>
-            <StatIcon>
+            <StatIcon success>
               <Icon icon={FiShield} />
             </StatIcon>
+
             <div>
-              <span>Запрещено</span>
-              <strong>{logs.filter((log) => log.status === "FORBIDDEN").length}</strong>
+              <span>Входы и регистрации</span>
+              <strong>
+                {logs.filter((log) => log.log_type === "AUTH").length}
+              </strong>
             </div>
           </StatCard>
 
           <StatCard>
             <StatIcon>
-              <Icon icon={FiActivity} />
+              <Icon icon={FiUsers} />
             </StatIcon>
+
             <div>
-              <span>Всего записей</span>
-              <strong>{logs.length}</strong>
+              <span>[Admin] Пользователи</span>
+              <strong>
+                {logs.filter((log) => log.log_type === "ADMIN_USER").length}
+              </strong>
             </div>
           </StatCard>
         </StatsGrid>
@@ -161,26 +215,58 @@ function AdminLogsPage({ user, onLogout }: AdminLogsPageProps) {
         <Panel>
           <PanelHeader>
             <div>
-              <h3>Журнал авторизации</h3>
-              <p>Последние 100 записей</p>
+              <h3>Журнал событий</h3>
+              <p>Единая таблица логов системы</p>
             </div>
           </PanelHeader>
+
+          <Tabs>
+            <TabButton
+              active={activeFilter === "ALL"}
+              onClick={() => setActiveFilter("ALL")}
+            >
+              Все логи
+            </TabButton>
+
+            <TabButton
+              active={activeFilter === "SECURITY_INCIDENT"}
+              onClick={() => setActiveFilter("SECURITY_INCIDENT")}
+            >
+              Инциденты информационной безопасности
+            </TabButton>
+
+            <TabButton
+              active={activeFilter === "AUTH"}
+              onClick={() => setActiveFilter("AUTH")}
+            >
+              Входы и регистрации
+            </TabButton>
+
+            <TabButton
+              active={activeFilter === "ADMIN_USER"}
+              onClick={() => setActiveFilter("ADMIN_USER")}
+            >
+              [Admin] Пользователи
+            </TabButton>
+          </Tabs>
 
           {loading && <StateMessage>Загрузка логов...</StateMessage>}
 
           {!loading && error && <ErrorMessage>{error}</ErrorMessage>}
 
-          {!loading && !error && logs.length === 0 && (
-            <StateMessage>Логи пока отсутствуют</StateMessage>
+          {!loading && !error && filteredLogs.length === 0 && (
+            <StateMessage>Логи не найдены</StateMessage>
           )}
 
-          {!loading && !error && logs.length > 0 && (
+          {!loading && !error && filteredLogs.length > 0 && (
             <TableWrapper>
               <Table>
                 <thead>
                   <tr>
-                    <th>Статус</th>
-                    <th>Пользователь</th>
+                    <th>Тип</th>
+                    <th>Действие</th>
+                    <th>Инициатор</th>
+                    <th>Цель</th>
                     <th>IP</th>
                     <th>Локация</th>
                     <th>Сообщение</th>
@@ -189,36 +275,43 @@ function AdminLogsPage({ user, onLogout }: AdminLogsPageProps) {
                 </thead>
 
                 <tbody>
-                  {logs.map((log) => (
-                    <tr key={log.id}>
+                  {filteredLogs.map((log) => (
+                    <tr key={`${log.log_type}-${log.source_id}`}>
                       <td>
-                        <StatusBadge status={log.status}>
-                          <Icon
-                            icon={log.status === "SUCCESS" ? FiCheckCircle : FiXCircle}
-                            size={14}
-                          />
-                          {getStatusLabel(log.status)}
-                        </StatusBadge>
+                        <TypeBadge type={log.log_type} action={log.action}>
+                          <Icon icon={getLogIcon(log)} size={14} />
+                          {getTypeLabel(log.log_type)}
+                        </TypeBadge>
+                      </td>
+
+                      <td>
+                        <ActionText action={log.action}>
+                          {getActionLabel(log.action)}
+                        </ActionText>
+
+                        {log.severity && <Severity>{log.severity}</Severity>}
                       </td>
 
                       <td>
                         <CellWithIcon>
                           <Icon icon={FiUser} size={15} />
-                          <span>{log.username_or_email || "-"}</span>
+                          <span>{log.actor || "-"}</span>
                         </CellWithIcon>
                       </td>
+
+                      <td>{log.target || "-"}</td>
 
                       <td>{log.ip_address || "-"}</td>
 
                       <td>
                         <CellWithIcon>
                           <Icon icon={FiMapPin} size={15} />
-                          <span>{getLocation(log)}</span>
+                          <span>{log.location || "-"}</span>
                         </CellWithIcon>
                       </td>
 
                       <td>
-                        <MessageCell>
+                        <MessageCell title={log.message || ""}>
                           <Icon icon={FiMonitor} size={15} />
                           <span>{log.message || "-"}</span>
                         </MessageCell>
@@ -340,7 +433,7 @@ const Panel = styled.div`
 `;
 
 const PanelHeader = styled.div`
-  margin-bottom: 22px;
+  margin-bottom: 18px;
 
   h3 {
     margin: 0;
@@ -353,6 +446,29 @@ const PanelHeader = styled.div`
     margin: 6px 0 0;
     color: #667085;
     font-size: 14px;
+  }
+`;
+
+const Tabs = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 22px;
+`;
+
+const TabButton = styled.button<{ active?: boolean }>`
+  border: none;
+  border-radius: 999px;
+  padding: 10px 15px;
+  background: ${({ active }) => (active ? "#2563eb" : "#f2f4f7")};
+  color: ${({ active }) => (active ? "#ffffff" : "#475467")};
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: 0.2s ease;
+
+  &:hover {
+    background: ${({ active }) => (active ? "#2563eb" : "#e4e7ec")};
   }
 `;
 
@@ -386,7 +502,10 @@ const Table = styled.table`
   }
 `;
 
-const StatusBadge = styled.div<{ status: string }>`
+const TypeBadge = styled.div<{
+  type: string;
+  action?: string;
+}>`
   display: inline-flex;
   align-items: center;
   gap: 7px;
@@ -394,21 +513,108 @@ const StatusBadge = styled.div<{ status: string }>`
   border-radius: 999px;
   font-size: 12px;
   font-weight: 800;
-  color: ${({ status }) => (status === "SUCCESS" ? "#027a48" : "#b42318")};
-  background: ${({ status }) => (status === "SUCCESS" ? "#ecfdf3" : "#fef3f2")};
+  white-space: nowrap;
+
+  color: ${({ type, action }) => {
+    if (
+      action === "FAILED" ||
+      action === "FORBIDDEN" ||
+      action === "BRUTE_FORCE"
+    ) {
+      return "#b42318";
+    }
+
+    if (type === "SECURITY_INCIDENT") {
+      return "#b42318";
+    }
+
+    if (type === "ADMIN_USER") {
+      return "#6941c6";
+    }
+
+    return "#027a48";
+  }};
+
+  background: ${({ type, action }) => {
+    if (
+      action === "FAILED" ||
+      action === "FORBIDDEN" ||
+      action === "BRUTE_FORCE"
+    ) {
+      return "#fef3f2";
+    }
+
+    if (type === "SECURITY_INCIDENT") {
+      return "#fef3f2";
+    }
+
+    if (type === "ADMIN_USER") {
+      return "#f4f3ff";
+    }
+
+    return "#ecfdf3";
+  }};
+`;
+
+const ActionText = styled.div<{ action?: string }>`
+  font-weight: 800;
+  white-space: nowrap;
+
+  color: ${({ action }) => {
+    if (
+      action === "FAILED" ||
+      action === "FORBIDDEN" ||
+      action === "BRUTE_FORCE"
+    ) {
+      return "#b42318";
+    }
+
+    if (action === "SUCCESS") {
+      return "#027a48";
+    }
+
+    if (
+      action === "USER_CREATED" ||
+      action === "USER_UPDATED" ||
+      action === "USER_DELETED"
+    ) {
+      return "#6941c6";
+    }
+
+    return "#101828";
+  }};
+`;
+
+const Severity = styled.div`
+  margin-top: 4px;
+  display: inline-flex;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: #fff1f3;
+  color: #c01048;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
 `;
 
 const CellWithIcon = styled.div`
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  max-width: 220px;
+
+  span {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 `;
 
 const MessageCell = styled.div`
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  max-width: 340px;
+  max-width: 360px;
 
   span {
     white-space: nowrap;
