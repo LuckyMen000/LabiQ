@@ -8,8 +8,7 @@ from app.models.login_attempt import LoginAttempt
 from app.models.auth_log import AuthLog
 
 from app.views.auth_view import router as auth_router
-
-Base.metadata.create_all(bind=engine)
+from app.views.admin_view import router as admin_router
 
 app = FastAPI(
     title="LabIQ API",
@@ -21,13 +20,17 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:3000",
+        "http://192.168.31.123:3000",
     ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+Base.metadata.create_all(bind=engine)
+
 app.include_router(auth_router)
+app.include_router(admin_router)
 
 
 @app.get("/")
