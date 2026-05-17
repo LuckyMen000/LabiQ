@@ -28,18 +28,18 @@ export interface RegisterRequest {
 }
 
 export const loginUser = async (payload: LoginRequest): Promise<AuthResponse> => {
-  const response = await api.post<AuthResponse>("/api/auth/login", payload);
+  const response = await api.post<AuthResponse>("/auth/login", payload);
   return response.data;
 };
 
 export const registerUser = async (
   payload: RegisterRequest
 ): Promise<AuthResponse> => {
-  const response = await api.post<AuthResponse>("/api/auth/register", payload);
+  const response = await api.post<AuthResponse>("/auth/register", payload);
   return response.data;
 };
 
 export const getCurrentUser = async (): Promise<UserResponse> => {
-  const response = await api.get<UserResponse>("/api/auth/me");
+  const response = await api.get<UserResponse>("/auth/me");
   return response.data;
 };
