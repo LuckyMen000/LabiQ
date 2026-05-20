@@ -1,6 +1,7 @@
 from sqlalchemy import Column, Integer, String, Boolean, DateTime
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
+
 from app.database import Base
 
 
@@ -52,6 +53,12 @@ class User(Base):
 
     auth_logs = relationship(
         "AuthLog",
+        back_populates="user",
+        passive_deletes=True
+    )
+
+    security_incidents = relationship(
+        "SecurityIncident",
         back_populates="user",
         passive_deletes=True
     )

@@ -1,6 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
+from app.core.ip_blocker import block_ip_address, unblock_ip_address
+from app.core.audit_logger import create_audit_log
+from app.schemas.admin_schema import IpBlockRequest, IpUnblockRequest
+
 from app.core.audit_logger import create_audit_log
 from app.core.role_checker import require_admin
 from app.core.security import hash_password
@@ -368,4 +372,94 @@ def get_admin_settings(
         "maintenance_mode": False,
         "registration_enabled": True,
         "system_name": "LabIQ"
+    }
+
+@router.post("/ip-blocks/block")
+def block_ip_address_by_admin(
+    payload: IpBlockRequest,
+    db: Session = Depends(get_db)
+):
+    admin = db.query(User).filter(User.id == payload.admin_user_id).first()
+
+    if not admin:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Администратор не найден"
+        )
+
+    if admin.role != "Администратор":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Недостаточно прав"
+        )
+
+    blocked_ip = block_ip_address(
+        db=db,
+        ip_address=payload.ip_address,
+        block_seconds=payload.block_seconds,
+        attempts_count=3,
+    )
+
+    reason = payload.reason or "Ручная блокировка IP-адреса"
+
+    create_audit_log(
+        db=db,
+        actor_user_id=admin.id,
+        action="IP_BLOCKED",
+        entity="IP_SECURITY",
+        description=f"Администратор {admin.full_name} заблокировал IP-адрес {payload.ip_address}. Причина: {reason}",
+        ip_address=payload.ip_address,
+    )
+
+    return {
+        "message": "IP-адрес успешно заблокирован",
+        "ip_address": blocked_ip.ip_address,
+        "blocked_until": blocked_ip.blocked_until,
+    }
+
+
+@router.post("/ip-blocks/unblock")
+def unblock_ip_address_by_admin(
+    payload: IpUnblockRequest,
+    db: Session = Depends(get_db)
+):
+    admin = db.query(User).filter(User.id == payload.admin_user_id).first()
+
+    if not admin:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Администратор не найден"
+        )
+
+    if admin.role != "Администратор":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Недостаточно прав"
+        )
+
+    unblocked_ip = unblock_ip_address(
+        db=db,
+        ip_address=payload.ip_address,
+    )
+
+    if not unblocked_ip:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="IP-адрес не найден"
+        )
+
+    reason = payload.reason or "Ручная разблокировка IP-адреса"
+
+    create_audit_log(
+        db=db,
+        actor_user_id=admin.id,
+        action="IP_UNBLOCKED",
+        entity="IP_SECURITY",
+        description=f"Администратор {admin.full_name} разблокировал IP-адрес {payload.ip_address}. Причина: {reason}",
+        ip_address=payload.ip_address,
+    )
+
+    return {
+        "message": "IP-адрес успешно разблокирован",
+        "ip_address": unblocked_ip.ip_address,
     }

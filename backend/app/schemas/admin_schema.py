@@ -79,3 +79,16 @@ class AdminStatsResponse(BaseModel):
     forbidden_login_count: int
     audit_logs_count: int
     security_incidents_count: int
+
+
+class IpBlockRequest(BaseModel):
+    ip_address: str = Field(..., min_length=3, max_length=100)
+    admin_user_id: int
+    block_seconds: int = Field(default=3600, ge=60, le=86400)
+    reason: Optional[str] = Field(default=None, max_length=500)
+
+
+class IpUnblockRequest(BaseModel):
+    ip_address: str = Field(..., min_length=3, max_length=100)
+    admin_user_id: int
+    reason: Optional[str] = Field(default=None, max_length=500)

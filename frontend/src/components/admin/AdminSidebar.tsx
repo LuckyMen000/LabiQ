@@ -42,72 +42,97 @@ function AdminSidebar({ user, onLogout }: AdminSidebarProps) {
 
   const isActive = (path: string) => location.pathname === path;
 
+  const getInitial = () => {
+    if (user?.full_name?.trim()) {
+      return user.full_name.trim().charAt(0).toUpperCase();
+    }
+
+    if (user?.username?.trim()) {
+      return user.username.trim().charAt(0).toUpperCase();
+    }
+
+    return "A";
+  };
+
   return (
     <Sidebar>
-      <LogoBlock onClick={() => navigate("/admin")}>
-        <LogoIcon>
-          <Icon icon={FiShield} />
-        </LogoIcon>
+      <Top>
+        <LogoBlock onClick={() => navigate("/admin")}>
+          <LogoIcon>
+            <Icon icon={FiShield} size={18} />
+          </LogoIcon>
 
-        <LogoText>
-          <h2>LabIQ</h2>
-          <span>Admin Panel</span>
-        </LogoText>
-      </LogoBlock>
+          <LogoText>
+            <strong>LabIQ</strong>
+            <span>Admin Panel</span>
+          </LogoText>
+        </LogoBlock>
 
-      <Nav>
-        <NavItem active={isActive("/admin")} onClick={() => navigate("/admin")}>
-          <Icon icon={FiHome} />
-          <span>Главная</span>
-        </NavItem>
+        <Nav>
+          <NavItem active={isActive("/admin")} onClick={() => navigate("/admin")}>
+            <Icon icon={FiHome} />
+            <span>Главная</span>
+          </NavItem>
 
-       <NavItem
-          active={isActive("/admin/users")}
-          onClick={() => navigate("/admin/users")}
-           >
-          <Icon icon={FiUsers} />
-          <span>Пользователи</span>
-        </NavItem>
+          <NavItem
+            active={isActive("/admin/users")}
+            onClick={() => navigate("/admin/users")}
+          >
+            <Icon icon={FiUsers} />
+            <span>Пользователи</span>
+          </NavItem>
 
-        <NavItem onClick={() => navigate("/admin/data")}>
-          <Icon icon={FiDatabase} />
-          <span>Данные</span>
-        </NavItem>
+          <NavItem
+            active={isActive("/admin/data")}
+            onClick={() => navigate("/admin/data")}
+          >
+            <Icon icon={FiDatabase} />
+            <span>Данные</span>
+          </NavItem>
 
-        <NavItem onClick={() => navigate("/admin/reports")}>
-          <Icon icon={FiBarChart2} />
-          <span>Отчёты</span>
-        </NavItem>
+          <NavItem
+            active={isActive("/admin/reports")}
+            onClick={() => navigate("/admin/reports")}
+          >
+            <Icon icon={FiBarChart2} />
+            <span>Отчёты</span>
+          </NavItem>
 
-        <NavItem
-          active={isActive("/admin/logs")}
-          onClick={() => navigate("/admin/logs")}
-        >
-          <Icon icon={FiActivity} />
-          <span>Логи</span>
-        </NavItem>
+          <NavItem
+            active={isActive("/admin/logs")}
+            onClick={() => navigate("/admin/logs")}
+          >
+            <Icon icon={FiActivity} />
+            <span>Логи</span>
+          </NavItem>
 
-        <NavItem onClick={() => navigate("/admin/settings")}>
-          <Icon icon={FiSettings} />
-          <span>Настройки</span>
-        </NavItem>
-      </Nav>
+          <NavItem
+            active={isActive("/admin/settings")}
+            onClick={() => navigate("/admin/settings")}
+          >
+            <Icon icon={FiSettings} />
+            <span>Настройки</span>
+          </NavItem>
+        </Nav>
+      </Top>
 
-      <SidebarFooter>
-        <UserMini>
-          <UserAvatar>{user?.full_name?.charAt(0) || "A"}</UserAvatar>
+      <Bottom>
+        <UserCard>
+          <Avatar>{getInitial()}</Avatar>
 
           <UserInfo>
-            <strong>{user?.full_name || "Администратор"}</strong>
+            <strong title={user?.full_name || "Администратор"}>
+              {user?.full_name || "Администратор"}
+            </strong>
             <span>{user?.role || "Администратор"}</span>
           </UserInfo>
-        </UserMini>
+        </UserCard>
 
         <LogoutButton onClick={onLogout}>
           <Icon icon={FiLogOut} />
           <span>Выйти</span>
         </LogoutButton>
-      </SidebarFooter>
+      </Bottom>
     </Sidebar>
   );
 }
@@ -115,27 +140,43 @@ function AdminSidebar({ user, onLogout }: AdminSidebarProps) {
 export default AdminSidebar;
 
 const Sidebar = styled.aside`
-  width: 280px;
-  min-height: 100vh;
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 50;
+  width: 240px;
+  height: 100vh;
   background: #ffffff;
-  color: #101828;
+  border-right: 1px solid #e4e7ec;
+  padding: 24px 18px 18px;
   display: flex;
   flex-direction: column;
-  padding: 24px 20px;
-  border-right: 1px solid #e4e7ec;
+  justify-content: space-between;
+  overflow-y: auto;
+  overflow-x: hidden;
 `;
 
-const LogoBlock = styled.div`
+const Top = styled.div`
+  min-height: 0;
+`;
+
+const LogoBlock = styled.button`
+  width: 100%;
+  border: none;
+  background: transparent;
+  padding: 0;
   display: flex;
   align-items: center;
   gap: 14px;
-  margin-bottom: 36px;
   cursor: pointer;
+  margin-bottom: 44px;
+  text-align: left;
 `;
 
 const LogoIcon = styled.div`
   width: 48px;
   height: 48px;
+  min-width: 48px;
   border-radius: 16px;
   background: #eff6ff;
   color: #2563eb;
@@ -145,105 +186,146 @@ const LogoIcon = styled.div`
 `;
 
 const LogoText = styled.div`
-  h2 {
-    margin: 0;
-    font-size: 28px;
-    font-weight: 800;
+  min-width: 0;
+
+  strong {
+    display: block;
+    font-size: 26px;
+    font-weight: 900;
     color: #101828;
-    letter-spacing: -0.5px;
+    line-height: 1;
+    letter-spacing: -0.6px;
   }
 
   span {
-    color: #667085;
+    display: block;
+    margin-top: 7px;
     font-size: 13px;
+    color: #667085;
+    line-height: 1.2;
   }
 `;
 
 const Nav = styled.nav`
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
 `;
 
 const NavItem = styled.button<{ active?: boolean }>`
   width: 100%;
+  min-height: 50px;
   border: none;
   border-radius: 14px;
-  padding: 14px 16px;
   background: ${({ active }) => (active ? "#2563eb" : "transparent")};
-  color: ${({ active }) => (active ? "#ffffff" : "#475467")};
+  color: ${({ active }) => (active ? "#ffffff" : "#344054")};
+  padding: 14px 14px;
   display: flex;
   align-items: center;
   gap: 12px;
-  font-size: 15px;
-  font-weight: 700;
+  font-size: 14px;
+  font-weight: 800;
   cursor: pointer;
   transition: 0.2s ease;
+  text-align: left;
+
+  svg {
+    min-width: 18px;
+  }
+
+  span {
+    white-space: nowrap;
+  }
 
   &:hover {
     background: ${({ active }) => (active ? "#2563eb" : "#f2f4f7")};
-    color: ${({ active }) => (active ? "#ffffff" : "#101828")};
   }
 `;
 
-const SidebarFooter = styled.div`
-  margin-top: auto;
+const Bottom = styled.div`
   display: flex;
   flex-direction: column;
   gap: 14px;
+  padding-bottom: 6px;
 `;
 
-const UserMini = styled.div`
+const UserCard = styled.div`
+  width: 100%;
+  min-height: 76px;
+  padding: 16px 14px;
+  border-radius: 18px;
+  background: #f8fafc;
+  border: 1px solid #e4e7ec;
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 14px;
-  border-radius: 16px;
-  background: #f8fafc;
-  border: 1px solid #e4e7ec;
 `;
 
-const UserAvatar = styled.div`
-  min-width: 42px;
-  height: 42px;
+const Avatar = styled.div`
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
   border-radius: 50%;
   background: #2563eb;
   color: #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: 800;
+  font-weight: 900;
+  font-size: 15px;
 `;
 
 const UserInfo = styled.div`
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
+  min-width: 0;
+  flex: 1;
 
   strong {
-    font-size: 14px;
+    display: block;
+    max-width: 120px;
+    font-size: 13px;
     line-height: 1.25;
+    font-weight: 900;
     color: #101828;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   span {
-    margin-top: 2px;
-    color: #667085;
+    display: block;
+    margin-top: 6px;
+    max-width: 120px;
     font-size: 12px;
+    line-height: 1.25;
+    color: #667085;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 `;
 
 const LogoutButton = styled.button`
+  width: 100%;
+  min-height: 52px;
   border: none;
-  border-radius: 14px;
-  padding: 14px 16px;
+  border-radius: 16px;
   background: #fee4e2;
   color: #b42318;
-  font-size: 15px;
-  font-weight: 800;
+  padding: 14px 16px;
+  font-size: 14px;
+  font-weight: 900;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 10px;
+  transition: 0.2s ease;
+
+  svg {
+    min-width: 18px;
+  }
+
+  &:hover {
+    background: #fecdca;
+  }
 `;

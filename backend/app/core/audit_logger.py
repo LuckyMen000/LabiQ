@@ -9,12 +9,12 @@ def create_audit_log(
     db: Session,
     action: str,
     entity: str,
+    description: str,
     actor_user_id: Optional[int] = None,
     target_user_id: Optional[int] = None,
-    description: Optional[str] = None,
     ip_address: Optional[str] = None,
     user_agent: Optional[str] = None,
-):
+) -> AuditLog:
     audit_log = AuditLog(
         actor_user_id=actor_user_id,
         target_user_id=target_user_id,
