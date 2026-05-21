@@ -13,8 +13,8 @@ import {
   FiX,
 } from "react-icons/fi";
 
-import AdminSidebar from "../components/admin/AdminSidebar";
-import { api } from "../api/api";
+import AdminSidebar from "../../components/admin/AdminSidebar";
+import { api } from "../../api/api";
 
 type User = {
   id: number;

@@ -1,5 +1,8 @@
+import os
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from app.database import Base, check_database_connection, engine
 
@@ -11,12 +14,13 @@ from app.models.user import User
 
 from app.views.admin_view import router as admin_router
 from app.views.auth_view import router as auth_router
+from app.views.user_view import router as user_router
 
 
 app = FastAPI(
     title="LabIQ API",
     version="0.0.1",
-    description="Laboratory Information & Analytics System API"
+    description="Laboratory Information & Analytics System API",
 )
 
 app.add_middleware(
@@ -29,16 +33,25 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+os.makedirs("uploads/avatars", exist_ok=True)
+
+app.mount(
+    "/uploads",
+    StaticFiles(directory="uploads"),
+    name="uploads",
+)
+
 Base.metadata.create_all(bind=engine)
 
 app.include_router(auth_router)
 app.include_router(admin_router)
+app.include_router(user_router)
 
 
 @app.get("/")
 def root():
     return {
-        "message": "LabIQ API is running"
+        "message": "LabIQ API is running",
     }
 
 
@@ -50,5 +63,5 @@ def health_check():
         "status": "ok",
         "project": "LabIQ",
         "backend": "FastAPI",
-        "database": "connected" if db_status else "error"
+        "database": "connected" if db_status else "error",
     }
