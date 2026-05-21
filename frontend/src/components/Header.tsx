@@ -1,12 +1,22 @@
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import styled from "@emotion/styled";
-import { FiLogOut, FiUser, FiShield, FiHome } from "react-icons/fi";
+import { FiLogOut, FiUser, FiShield, FiHome, FiSettings } from "react-icons/fi";
 
 const Header = () => {
   const navigate = useNavigate();
 
+  const savedUser = localStorage.getItem("user");
+  const user = savedUser ? JSON.parse(savedUser) : null;
+
+  const isAdmin =
+    user?.role === "admin" ||
+    user?.role === "Администратор" ||
+    user?.role === "administrator";
+
   const handleLogout = () => {
-    localStorage.removeItem("token");
+    localStorage.removeItem("access_token");
+    localStorage.removeItem("remember_me");
+    localStorage.removeItem("user");
     navigate("/login");
   };
 
@@ -17,6 +27,7 @@ const Header = () => {
           <LogoIcon>
             <FiShield />
           </LogoIcon>
+
           <LogoText>
             <strong>LabIQ</strong>
             <span>Laboratory Security System</span>
@@ -33,6 +44,13 @@ const Header = () => {
             <FiUser />
             Профиль
           </StyledNavLink>
+
+          {isAdmin && (
+            <StyledNavLink to="/admin">
+              <FiSettings />
+              Админка
+            </StyledNavLink>
+          )}
         </Nav>
 
         <LogoutButton onClick={handleLogout}>
@@ -58,7 +76,7 @@ const HeaderWrapper = styled.header`
 const Container = styled.div`
   max-width: 1240px;
   margin: 0 auto;
-  padding: 16px 24px;
+  padding: 14px 24px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -116,7 +134,7 @@ const StyledNavLink = styled(NavLink)`
   text-decoration: none;
   color: #4b5563;
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
 
   &:hover {
     background: #f3f4f6;
@@ -137,7 +155,7 @@ const LogoutButton = styled.button`
   border-radius: 12px;
   cursor: pointer;
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
   display: flex;
   align-items: center;
   gap: 8px;

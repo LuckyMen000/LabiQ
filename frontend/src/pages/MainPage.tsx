@@ -8,10 +8,14 @@ import {
   FiLock,
   FiUsers,
 } from "react-icons/fi";
+import { Helmet } from "react-helmet-async";
 
 const MainPage = () => {
   return (
     <Page>
+        <Helmet>
+            <title>Главная страница | LabIQ</title>
+        </Helmet>
       <Header />
 
       <Main>

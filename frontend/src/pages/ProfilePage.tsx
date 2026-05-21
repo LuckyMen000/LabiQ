@@ -1,5 +1,6 @@
 import { ChangeEvent, useRef, useState } from "react";
 import styled from "@emotion/styled";
+import { Helmet } from "react-helmet-async";
 import Header from "../components/Header";
 import {
   FiUser,
@@ -48,6 +49,10 @@ const ProfilePage = () => {
   const [user, setUser] = useState<User | null>(parsedUser);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
+
+  const pageTitle = user?.full_name
+    ? `Профиль: ${user.full_name} | LabIQ`
+    : "Профиль | LabIQ";
 
   const initials = user?.full_name
     ? user.full_name
@@ -148,6 +153,10 @@ const ProfilePage = () => {
 
   return (
     <Page>
+      <Helmet>
+        <title>{pageTitle}</title>
+      </Helmet>
+
       <Header />
 
       <Main>
@@ -159,7 +168,11 @@ const ProfilePage = () => {
         <ProfileCard>
           <AvatarWrapper>
             <Avatar>
-              {avatarSrc ? <AvatarImage src={avatarSrc} alt="User avatar" /> : initials}
+              {avatarSrc ? (
+                <AvatarImage src={avatarSrc} alt="User avatar" />
+              ) : (
+                initials
+              )}
             </Avatar>
 
             <AvatarActions>
