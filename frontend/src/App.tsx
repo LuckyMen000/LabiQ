@@ -4,6 +4,7 @@ import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import MainPage from "./pages/MainPage";
 import ProfilePage from "./pages/ProfilePage";
+import ProfileSettingsPage from "./pages/ProfileSettingsPage";
 
 import AdminPage from "./pages/AdminPages/AdminPage";
 import AdminRoute from "./pages/AdminPages/AdminRoute";
@@ -61,6 +62,24 @@ function App() {
         />
 
         <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <ProfilePage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/profile/settings"
+          element={
+            <ProtectedRoute>
+              <ProfileSettingsPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
           path="/admin"
           element={
             <ProtectedRoute>
@@ -92,15 +111,6 @@ function App() {
             </ProtectedRoute>
           }
         />
-
-        <Route
-  path="/profile"
-  element={
-    <ProtectedRoute>
-      <ProfilePage />
-    </ProtectedRoute>
-  }
-/>
 
         <Route
           path="*"

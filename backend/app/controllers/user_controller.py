@@ -6,15 +6,96 @@ from fastapi import HTTPException, UploadFile
 from sqlalchemy.orm import Session
 
 from app.models.user import User
+from app.schemas.user_schema import UserPasswordUpdate, UserProfileUpdate
+from app.core.security import hash_password, verify_password
+
 
 AVATAR_DIR = "uploads/avatars"
 ALLOWED_EXTENSIONS = {"jpg", "jpeg", "png", "webp"}
 MAX_FILE_SIZE = 2 * 1024 * 1024
 
 
+def update_user_profile(
+    db: Session,
+    current_user: User,
+    payload: UserProfileUpdate,
+):
+    existing_email = (
+        db.query(User)
+        .filter(
+            User.email == payload.email,
+            User.id != current_user.id,
+        )
+        .first()
+    )
+
+    if existing_email:
+        raise HTTPException(
+            status_code=400,
+            detail="Пользователь с таким email уже существует",
+        )
+
+    existing_username = (
+        db.query(User)
+        .filter(
+            User.username == payload.username,
+            User.id != current_user.id,
+        )
+        .first()
+    )
+
+    if existing_username:
+        raise HTTPException(
+            status_code=400,
+            detail="Пользователь с таким логином уже существует",
+        )
+
+    current_user.full_name = payload.full_name.strip()
+    current_user.email = payload.email.strip()
+    current_user.username = payload.username.strip()
+
+    db.commit()
+    db.refresh(current_user)
+
+    return current_user
+
+
+def update_user_password(
+    db: Session,
+    current_user: User,
+    payload: UserPasswordUpdate,
+):
+    if not verify_password(
+        payload.current_password,
+        current_user.hashed_password,
+    ):
+        raise HTTPException(
+            status_code=400,
+            detail="Текущий пароль указан неверно",
+        )
+
+    if payload.current_password == payload.new_password:
+        raise HTTPException(
+            status_code=400,
+            detail="Новый пароль не должен совпадать с текущим",
+        )
+
+    current_user.hashed_password = hash_password(payload.new_password)
+
+    db.commit()
+    db.refresh(current_user)
+
+    return {
+        "message": "Пароль успешно обновлен",
+    }
+
+
 def _get_file_extension(filename: str) -> str:
     if "." not in filename:
-        raise HTTPException(status_code=400, detail="Файл должен иметь расширение")
+        raise HTTPException(
+            status_code=400,
+            detail="Файл должен иметь расширение",
+        )
 
     extension = filename.rsplit(".", 1)[1].lower()
 
