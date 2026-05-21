@@ -9,7 +9,7 @@ import {
   FiShield,
   FiUsers,
 } from "react-icons/fi";
-import AdminSidebar from "../components/admin/AdminSidebar";
+import AdminSidebar from "../../components/admin/AdminSidebar";
 
 type User = {
   id: number;

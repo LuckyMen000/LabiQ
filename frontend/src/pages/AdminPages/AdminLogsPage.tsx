@@ -18,8 +18,8 @@ import {
   FiXCircle,
 } from "react-icons/fi";
 
-import AdminSidebar from "../components/admin/AdminSidebar";
-import { api } from "../api/api";
+import AdminSidebar from "../../components/admin/AdminSidebar";
+import { api } from "../../api/api";
 
 const SIDEBAR_WIDTH = 240;
 const PERMANENT_BLOCK_SECONDS = 315360000;
