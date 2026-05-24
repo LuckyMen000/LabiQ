@@ -15,12 +15,26 @@ type AdminRouteProps = {
   children: ReactNode;
 };
 
-function AdminRoute({ user, children }: AdminRouteProps) {
+function AdminRoute({
+  user,
+  children,
+}: AdminRouteProps) {
+  const token = localStorage.getItem("access_token");
+
+  if (!token) {
+    return <Navigate to="/login" replace />;
+  }
+
   if (!user) {
     return <Navigate to="/login" replace />;
   }
 
-  if (user.role !== "Администратор") {
+  const isAdmin =
+    user.role === "admin" ||
+    user.role === "administrator" ||
+    user.role === "Администратор";
+
+  if (!isAdmin) {
     return <Navigate to="/" replace />;
   }
 
