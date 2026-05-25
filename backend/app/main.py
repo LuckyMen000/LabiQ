@@ -5,7 +5,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from app.core.app_logger import setup_logging, get_app_logger
-
 from app.database import Base, check_database_connection, engine
 
 from app.models.audit_log import AuditLog
@@ -27,6 +26,9 @@ from app.middleware.sql_injection_protection_middleware import (
 from app.views.admin_view import router as admin_router
 from app.views.auth_view import router as auth_router
 from app.views.log_management_view import router as log_management_router
+from app.views.security_incident_catalog_view import (
+    router as security_incident_catalog_router,
+)
 from app.views.user_view import router as user_router
 
 
@@ -78,6 +80,7 @@ app.include_router(auth_router)
 app.include_router(admin_router)
 app.include_router(user_router)
 app.include_router(log_management_router)
+app.include_router(security_incident_catalog_router)
 
 
 @app.get("/")
