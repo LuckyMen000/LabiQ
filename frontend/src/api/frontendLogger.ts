@@ -1,0 +1,51 @@
+type LogLevel = "info" | "warning" | "error";
+
+type LogPayload = {
+  level: LogLevel;
+  message: string;
+  details?: unknown;
+  createdAt: string;
+};
+
+export const frontendLogger = {
+  info(message: string, details?: unknown) {
+    sendLog({
+      level: "info",
+      message,
+      details,
+      createdAt: new Date().toISOString(),
+    });
+  },
+
+  warning(message: string, details?: unknown) {
+    sendLog({
+      level: "warning",
+      message,
+      details,
+      createdAt: new Date().toISOString(),
+    });
+  },
+
+  error(message: string, details?: unknown) {
+    sendLog({
+      level: "error",
+      message,
+      details,
+      createdAt: new Date().toISOString(),
+    });
+  },
+};
+
+const sendLog = async (payload: LogPayload) => {
+  try {
+    await fetch("http://localhost:8000/frontend-logs", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+  } catch {
+    // Ошибки логирования не выводим в console.
+  }
+};
