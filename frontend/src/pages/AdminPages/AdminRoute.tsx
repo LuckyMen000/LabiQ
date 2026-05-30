@@ -11,28 +11,30 @@ type User = {
 };
 
 type AdminRouteProps = {
-  user: User | null;
+  user?: User | null;
   children: ReactNode;
 };
 
-function AdminRoute({
-  user,
-  children,
-}: AdminRouteProps) {
+function AdminRoute({ user, children }: AdminRouteProps) {
   const token = localStorage.getItem("access_token");
+
+  const savedUser = localStorage.getItem("user");
+  const localUser: User | null = savedUser ? JSON.parse(savedUser) : null;
+
+  const currentUser = user || localUser;
 
   if (!token) {
     return <Navigate to="/login" replace />;
   }
 
-  if (!user) {
+  if (!currentUser) {
     return <Navigate to="/login" replace />;
   }
 
   const isAdmin =
-    user.role === "admin" ||
-    user.role === "administrator" ||
-    user.role === "Администратор";
+    currentUser.role === "admin" ||
+    currentUser.role === "administrator" ||
+    currentUser.role === "Администратор";
 
   if (!isAdmin) {
     return <Navigate to="/" replace />;
