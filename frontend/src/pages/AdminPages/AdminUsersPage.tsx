@@ -16,6 +16,8 @@ import {
 import AdminSidebar from "../../components/admin/AdminSidebar";
 import { api } from "../../api/api";
 
+const SIDEBAR_WIDTH = 240;
+
 type User = {
   id: number;
   full_name: string;
@@ -481,13 +483,16 @@ export default AdminUsersPage;
 
 const Page = styled.div`
   min-height: 100vh;
-  display: flex;
   background: #f8fafc;
+  overflow-x: hidden;
 `;
 
 const Content = styled.main`
-  flex: 1;
+  margin-left: ${SIDEBAR_WIDTH}px;
+  width: calc(100vw - ${SIDEBAR_WIDTH}px);
+  min-height: 100vh;
   padding: 40px;
+  overflow-x: hidden;
 `;
 
 const Header = styled.div`

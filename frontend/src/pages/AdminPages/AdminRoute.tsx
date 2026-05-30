@@ -32,9 +32,10 @@ function AdminRoute({ user, children }: AdminRouteProps) {
   }
 
   const isAdmin =
+    currentUser.role === "Супер администратор" ||
+    currentUser.role === "Администратор" ||
     currentUser.role === "admin" ||
-    currentUser.role === "administrator" ||
-    currentUser.role === "Администратор";
+    currentUser.role === "administrator";
 
   if (!isAdmin) {
     return <Navigate to="/" replace />;

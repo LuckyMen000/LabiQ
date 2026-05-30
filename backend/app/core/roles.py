@@ -1,0 +1,85 @@
+SUPER_ADMIN = "Супер администратор"
+ADMIN = "Администратор"
+
+SECURITY_HEAD = "Руководитель ИБ"
+SECURITY_SPECIALIST = "Специалист ИБ"
+SOC_ANALYST = "SOC Аналитик"
+
+LAB_HEAD = "Руководитель лаборатории"
+SENIOR_LAB_TECHNICIAN = "Старший лаборант"
+LAB_TECHNICIAN = "Лаборант"
+REGISTRAR = "Регистратор"
+
+CLINIC_MANAGER = "Менеджер по работе с клиниками"
+FINANCE_MANAGER = "Финансовый менеджер"
+BRANCH_MANAGER = "Руководитель филиала"
+
+AUDITOR = "Аудитор"
+QUALITY_CONTROLLER = "Контролер качества"
+
+
+ALL_ROLES = [
+    SUPER_ADMIN,
+    ADMIN,
+    SECURITY_HEAD,
+    SECURITY_SPECIALIST,
+    SOC_ANALYST,
+    LAB_HEAD,
+    SENIOR_LAB_TECHNICIAN,
+    LAB_TECHNICIAN,
+    REGISTRAR,
+    CLINIC_MANAGER,
+    FINANCE_MANAGER,
+    BRANCH_MANAGER,
+    AUDITOR,
+    QUALITY_CONTROLLER,
+]
+
+
+ADMIN_ROLES = [
+    SUPER_ADMIN,
+    ADMIN,
+]
+
+
+SECURITY_ROLES = [
+    SUPER_ADMIN,
+    ADMIN,
+    SECURITY_HEAD,
+    SECURITY_SPECIALIST,
+    SOC_ANALYST,
+]
+
+
+LAB_ROLES = [
+    SUPER_ADMIN,
+    ADMIN,
+    LAB_HEAD,
+    SENIOR_LAB_TECHNICIAN,
+    LAB_TECHNICIAN,
+    QUALITY_CONTROLLER,
+]
+
+
+REGISTRATION_ROLES = [
+    SUPER_ADMIN,
+    ADMIN,
+    LAB_HEAD,
+    REGISTRAR,
+    CLINIC_MANAGER,
+]
+
+
+REPORT_ROLES = [
+    SUPER_ADMIN,
+    ADMIN,
+    LAB_HEAD,
+    FINANCE_MANAGER,
+    BRANCH_MANAGER,
+    AUDITOR,
+]
+
+
+READ_ONLY_ROLES = [
+    AUDITOR,
+]
