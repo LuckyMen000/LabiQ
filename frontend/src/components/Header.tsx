@@ -9,11 +9,13 @@ const Header = () => {
   const user = savedUser ? JSON.parse(savedUser) : null;
 
   const isAdmin =
-    user?.role === "admin" ||
+    user?.role === "Супер администратор" ||
     user?.role === "Администратор" ||
+    user?.role === "admin" ||
     user?.role === "administrator";
 
   const handleLogout = () => {
+    localStorage.removeItem("token");
     localStorage.removeItem("access_token");
     localStorage.removeItem("remember_me");
     localStorage.removeItem("user");

@@ -1,7 +1,9 @@
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, field_validator
+
+from app.core.roles import ALL_ROLES, LAB_TECHNICIAN
 
 
 class AuthLogResponse(BaseModel):
@@ -56,8 +58,16 @@ class AdminUserCreate(BaseModel):
     email: EmailStr
     username: str = Field(..., min_length=3, max_length=100)
     password: str = Field(..., min_length=6)
-    role: str = Field(default="Лаборант", max_length=100)
+    role: str = Field(default=LAB_TECHNICIAN, max_length=100)
     is_active: bool = True
+
+    @field_validator("role")
+    @classmethod
+    def validate_role(cls, value: str) -> str:
+        if value not in ALL_ROLES:
+            raise ValueError("Недопустимая роль пользователя")
+
+        return value
 
 
 class AdminUserUpdate(BaseModel):
@@ -67,6 +77,17 @@ class AdminUserUpdate(BaseModel):
     password: Optional[str] = Field(default=None, min_length=6)
     role: Optional[str] = Field(default=None, max_length=100)
     is_active: Optional[bool] = None
+
+    @field_validator("role")
+    @classmethod
+    def validate_role(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return value
+
+        if value not in ALL_ROLES:
+            raise ValueError("Недопустимая роль пользователя")
+
+        return value
 
 
 class AdminStatsResponse(BaseModel):
@@ -83,12 +104,10 @@ class AdminStatsResponse(BaseModel):
 
 class IpBlockRequest(BaseModel):
     ip_address: str = Field(..., min_length=3, max_length=100)
-    admin_user_id: int
     block_seconds: int = Field(default=3600, ge=60, le=86400)
     reason: Optional[str] = Field(default=None, max_length=500)
 
 
 class IpUnblockRequest(BaseModel):
     ip_address: str = Field(..., min_length=3, max_length=100)
-    admin_user_id: int
     reason: Optional[str] = Field(default=None, max_length=500)

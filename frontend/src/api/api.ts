@@ -48,6 +48,7 @@ const buildCorrelationId = (): string => {
 const logout = (): void => {
   localStorage.removeItem("token");
   localStorage.removeItem("access_token");
+  localStorage.removeItem("remember_me");
   localStorage.removeItem("user");
 
   if (window.location.pathname !== "/login") {
@@ -63,8 +64,7 @@ export const api: AxiosInstance = axios.create({
 
 api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    const token =
-      localStorage.getItem("token") || localStorage.getItem("access_token");
+    const token = localStorage.getItem("access_token");
 
     const correlationId = buildCorrelationId();
 
@@ -108,7 +108,8 @@ api.interceptors.response.use(
           ? "Ошибка соединения с сервером"
           : "Ошибка запроса"),
       statusCode,
-      responseData?.code || (statusCode === 0 ? "NETWORK_ERROR" : "REQUEST_ERROR"),
+      responseData?.code ||
+        (statusCode === 0 ? "NETWORK_ERROR" : "REQUEST_ERROR"),
       responseData?.details || {}
     );
 

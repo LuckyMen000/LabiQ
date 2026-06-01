@@ -1,11 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
+from app.core.audit_logger import create_audit_log
 from app.core.ip_blocker import block_ip_address, unblock_ip_address
-from app.core.audit_logger import create_audit_log
-from app.schemas.admin_schema import IpBlockRequest, IpUnblockRequest
-
-from app.core.audit_logger import create_audit_log
 from app.core.role_checker import require_admin
 from app.core.security import hash_password
 from app.database import get_db
@@ -18,12 +15,14 @@ from app.schemas.admin_schema import (
     AdminUserCreate,
     AdminUserResponse,
     AdminUserUpdate,
+    IpBlockRequest,
+    IpUnblockRequest,
     UnifiedLogResponse,
 )
 
 router = APIRouter(
     prefix="/admin",
-    tags=["Admin"]
+    tags=["Admin"],
 )
 
 
@@ -145,7 +144,7 @@ def get_admin_logs(
 
     unified_logs.sort(
         key=lambda item: item["created_at"],
-        reverse=True
+        reverse=True,
     )
 
     for index, log in enumerate(unified_logs, start=1):
@@ -171,7 +170,7 @@ def get_admin_users(
 @router.post(
     "/users",
     response_model=AdminUserResponse,
-    status_code=status.HTTP_201_CREATED
+    status_code=status.HTTP_201_CREATED,
 )
 def create_admin_user(
     user_data: AdminUserCreate,
@@ -188,7 +187,7 @@ def create_admin_user(
     if existing_email:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Пользователь с таким email уже существует"
+            detail="Пользователь с таким email уже существует",
         )
 
     existing_username = (
@@ -200,7 +199,7 @@ def create_admin_user(
     if existing_username:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Пользователь с таким username уже существует"
+            detail="Пользователь с таким username уже существует",
         )
 
     new_user = User(
@@ -247,7 +246,7 @@ def update_admin_user(
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Пользователь не найден"
+            detail="Пользователь не найден",
         )
 
     old_email = user.email
@@ -262,7 +261,7 @@ def update_admin_user(
         if existing_email:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Пользователь с таким email уже существует"
+                detail="Пользователь с таким email уже существует",
             )
 
         user.email = user_data.email
@@ -277,7 +276,7 @@ def update_admin_user(
         if existing_username:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Пользователь с таким username уже существует"
+                detail="Пользователь с таким username уже существует",
             )
 
         user.username = user_data.username
@@ -295,7 +294,7 @@ def update_admin_user(
         if user.id == current_user.id and user_data.is_active is False:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Нельзя деактивировать самого себя"
+                detail="Нельзя деактивировать самого себя",
             )
 
         user.is_active = user_data.is_active
@@ -333,13 +332,13 @@ def delete_admin_user(
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Пользователь не найден"
+            detail="Пользователь не найден",
         )
 
     if user.id == current_user.id:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Нельзя удалить самого себя"
+            detail="Нельзя удалить самого себя",
         )
 
     deleted_user_id = user.id
@@ -360,7 +359,7 @@ def delete_admin_user(
     )
 
     return {
-        "message": "Пользователь успешно удалён"
+        "message": "Пользователь успешно удалён",
     }
 
 
@@ -371,28 +370,17 @@ def get_admin_settings(
     return {
         "maintenance_mode": False,
         "registration_enabled": True,
-        "system_name": "LabIQ"
+        "system_name": "LabIQ",
     }
+
 
 @router.post("/ip-blocks/block")
 def block_ip_address_by_admin(
     payload: IpBlockRequest,
-    db: Session = Depends(get_db)
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
 ):
-    admin = db.query(User).filter(User.id == payload.admin_user_id).first()
-
-    if not admin:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Администратор не найден"
-        )
-
-    if admin.role != "Администратор":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Недостаточно прав"
-        )
-
     blocked_ip = block_ip_address(
         db=db,
         ip_address=payload.ip_address,
@@ -404,11 +392,12 @@ def block_ip_address_by_admin(
 
     create_audit_log(
         db=db,
-        actor_user_id=admin.id,
+        actor_user_id=current_user.id,
         action="IP_BLOCKED",
         entity="IP_SECURITY",
-        description=f"Администратор {admin.full_name} заблокировал IP-адрес {payload.ip_address}. Причина: {reason}",
-        ip_address=payload.ip_address,
+        description=f"Администратор {current_user.full_name} заблокировал IP-адрес {payload.ip_address}. Причина: {reason}",
+        ip_address=request.client.host if request.client else None,
+        user_agent=request.headers.get("user-agent"),
     )
 
     return {
@@ -421,22 +410,10 @@ def block_ip_address_by_admin(
 @router.post("/ip-blocks/unblock")
 def unblock_ip_address_by_admin(
     payload: IpUnblockRequest,
-    db: Session = Depends(get_db)
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
 ):
-    admin = db.query(User).filter(User.id == payload.admin_user_id).first()
-
-    if not admin:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Администратор не найден"
-        )
-
-    if admin.role != "Администратор":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Недостаточно прав"
-        )
-
     unblocked_ip = unblock_ip_address(
         db=db,
         ip_address=payload.ip_address,
@@ -445,18 +422,19 @@ def unblock_ip_address_by_admin(
     if not unblocked_ip:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="IP-адрес не найден"
+            detail="IP-адрес не найден",
         )
 
     reason = payload.reason or "Ручная разблокировка IP-адреса"
 
     create_audit_log(
         db=db,
-        actor_user_id=admin.id,
+        actor_user_id=current_user.id,
         action="IP_UNBLOCKED",
         entity="IP_SECURITY",
-        description=f"Администратор {admin.full_name} разблокировал IP-адрес {payload.ip_address}. Причина: {reason}",
-        ip_address=payload.ip_address,
+        description=f"Администратор {current_user.full_name} разблокировал IP-адрес {payload.ip_address}. Причина: {reason}",
+        ip_address=request.client.host if request.client else None,
+        user_agent=request.headers.get("user-agent"),
     )
 
     return {
